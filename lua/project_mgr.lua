@@ -1,10 +1,9 @@
 -- main module file
-local module = require("plugin_name.module")
+local module = require("project_mgr.module")
 
 ---@class Config
----@field opt string Your config option
+---@field yd_app_dir string
 local config = {
-  opt = "Hello!",
 }
 
 ---@class MyModule
@@ -20,8 +19,12 @@ M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
 end
 
-M.hello = function()
-  return module.my_first_function(M.config.opt)
+M.list = function()
+  module.list_projects()
+end
+
+M.add = function()
+  module.add_project()
 end
 
 return M
