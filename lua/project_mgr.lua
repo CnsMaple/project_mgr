@@ -3,8 +3,7 @@ local module = require("project_mgr.module")
 
 ---@class Config
 ---@field yd_app_dir string
-local config = {
-}
+local config = {}
 
 ---@class MyModule
 local M = {}
@@ -25,6 +24,10 @@ end
 
 M.add = function()
   module.add_project()
+end
+
+M.add_current = function()
+  module.add_project_current_dir()
 end
 
 return M

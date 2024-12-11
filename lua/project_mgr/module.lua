@@ -20,7 +20,7 @@ local function ensure_project_file()
   local file_path = Path:new(project_file)
   if not file_path:exists() then
     file_path:write("[]", "w")
-    vim.notify("project_mgr: create a file: " .. file_path, vim.log.levels.INFO)
+    vim.notify("project_mgr: created file: " .. file_path, vim.log.levels.INFO)
   end
 end
 
@@ -44,22 +44,48 @@ end
 -- Add a new project
 function M.add_project()
   local name = vim.fn.input("Project Name: ")
+  if name == "" then
+    vim.notify("project_mgr: Project name cannot be empty", vim.log.levels.ERROR)
+    return
+  end
   local dir = vim.fn.input("Project Directory: ")
+  if dir == "" then
+    vim.notify("project_mgr: Project directory cannot be empty", vim.log.levels.ERROR)
+    return
+  end
   local projects = read_projects()
   table.insert(projects, { name = name, dir = dir })
   write_projects(projects)
-  vim.notify("project_mgr: add " .. name .. " success", vim.log.levels.INFO)
+  vim.notify("project_mgr: added " .. name .. " successfully", vim.log.levels.INFO)
+end
+
+-- Add a new project on current dir
+function M.add_project_current_dir()
+  local name = vim.fn.input("Project Name: ")
+  if name == "" then
+    vim.notify("project_mgr: Project name cannot be empty", vim.log.levels.ERROR)
+    return
+  end
+  local dir = vim.fn.getcwd() -- Get the current working directory
+  local projects = read_projects()
+  table.insert(projects, { name = name, dir = dir })
+  write_projects(projects)
+  vim.notify("project_mgr: added " .. name .. " successfully", vim.log.levels.INFO)
 end
 
 -- Delete a project
 local function delete_project(prompt_bufnr)
   local selection = action_state.get_selected_entry()
+  if not selection then
+    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
+    return
+  end
   actions.close(prompt_bufnr)
   local projects = read_projects()
   for i, project in ipairs(projects) do
     if project.name == selection.name and project.dir == selection.dir then
       table.remove(projects, i)
-      vim.notify("project_mgr: remove " .. project.name .. " success", vim.log.levels.INFO)
+      vim.notify("project_mgr: removed " .. project.name .. " successfully", vim.log.levels.INFO)
       break
     end
   end
@@ -69,9 +95,21 @@ end
 -- Edit a project
 local function edit_project(prompt_bufnr)
   local selection = action_state.get_selected_entry()
+  if not selection then
+    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
+    return
+  end
   actions.close(prompt_bufnr)
   local new_name = vim.fn.input("New Project Name: ", selection.name)
+  if new_name == "" then
+    vim.notify("project_mgr: Project name cannot be empty", vim.log.levels.ERROR)
+    return
+  end
   local new_dir = vim.fn.input("New Project Directory: ", selection.dir)
+  if new_dir == "" then
+    vim.notify("project_mgr: Project directory cannot be empty", vim.log.levels.ERROR)
+    return
+  end
   local projects = read_projects()
   for i, project in ipairs(projects) do
     if project.name == selection.name and project.dir == selection.dir then
@@ -80,12 +118,16 @@ local function edit_project(prompt_bufnr)
     end
   end
   write_projects(projects)
-  vim.notify("project_mgr: new name " .. new_name .. " new dir" .. new_dir, vim.log.levels.INFO)
+  vim.notify("project_mgr: updated to new name " .. new_name .. " and new dir " .. new_dir, vim.log.levels.INFO)
 end
 
 -- Change directory to the selected project's directory
 local function change_directory(prompt_bufnr)
   local selection = action_state.get_selected_entry()
+  if not selection then
+    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
+    return
+  end
   actions.close(prompt_bufnr)
   vim.cmd("cd " .. selection.dir)
   vim.notify("Changed directory to " .. selection.dir, vim.log.levels.INFO)
