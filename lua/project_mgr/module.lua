@@ -9,6 +9,7 @@ local conf = require("telescope.config").values
 
 local project_dir = vim.fn.stdpath("data") .. "/project_mgr"
 local project_file = project_dir .. "/project.json"
+local now_project = nil
 
 -- Ensure the project directory and file exist
 local function ensure_project_file()
@@ -162,6 +163,28 @@ function M.list_projects()
       end,
     })
     :find()
+end
+
+-- 获取现在的目录配置名字
+function M.get_now_project_name(dir_name)
+  local projects = read_projects()
+  for i, project in ipairs(projects) do
+    if project.dir == dir_name then
+      return project.name
+    end
+  end
+  return nil
+end
+
+-- 获取现在的目录配置名字
+function M.get_now_project_dir(name)
+  local projects = read_projects()
+  for i, project in ipairs(projects) do
+    if project.name == name then
+      return project.dir
+    end
+  end
+  return nil
 end
 
 return M
