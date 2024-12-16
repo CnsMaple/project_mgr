@@ -102,12 +102,14 @@ local function edit_project(prompt_bufnr)
   actions.close(prompt_bufnr)
   local new_name = vim.fn.input("New Project Name: ", selection.name)
   if new_name == "" then
-    vim.notify("project_mgr: Project name cannot be empty", vim.log.levels.ERROR)
+    new_name = selection.name
+    vim.notify("project_mgr: Project name use pre", vim.log.levels.INFO)
     return
   end
   local new_dir = vim.fn.input("New Project Directory: ", selection.dir)
   if new_dir == "" then
-    vim.notify("project_mgr: Project directory cannot be empty", vim.log.levels.ERROR)
+    new_dir = selection.dir
+    vim.notify("project_mgr: Project directory use pre", vim.log.levels.INFO)
     return
   end
   local projects = read_projects()
