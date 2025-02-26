@@ -1,15 +1,16 @@
 ---@class CustomModule
 local M = {}
 local Path = require("plenary.path")
-local actions = require("telescope.actions")
-local action_state = require("telescope.actions.state")
-local pickers = require("telescope.pickers")
-local finders = require("telescope.finders")
-local conf = require("telescope.config").values
+
+-- local actions = require("telescope.actions")
+-- local action_state = require("telescope.actions.state")
+-- local pickers = require("telescope.pickers")
+-- local finders = require("telescope.finders")
+-- local conf = require("telescope.config").values
 
 local project_dir = vim.fn.stdpath("data") .. "/project_mgr"
 local project_file = project_dir .. "/project.json"
-local now_project = nil
+-- local now_project = nil
 
 -- Ensure the project directory and file exist
 local function ensure_project_file()
@@ -21,7 +22,7 @@ local function ensure_project_file()
   local file_path = Path:new(project_file)
   if not file_path:exists() then
     file_path:write("[]", "w")
-    vim.notify("project_mgr: created file: " .. file_path, vim.log.levels.INFO)
+    vim.notify("project_mgr: created file: " .. project_file, vim.log.levels.INFO)
   end
 end
 
@@ -29,6 +30,9 @@ end
 local function read_projects()
   ensure_project_file()
   local file = io.open(project_file, "r")
+  if file == nil then
+    return {}
+  end
   local content = file:read("*a")
   file:close()
   return vim.fn.json_decode(content)
@@ -38,6 +42,9 @@ end
 local function write_projects(projects)
   ensure_project_file()
   local file = io.open(project_file, "w")
+  if file == nil then
+    error("Failed to write projects to file")
+  end
   file:write(vim.fn.json_encode(projects))
   file:close()
 end
@@ -75,16 +82,12 @@ function M.add_project_current_dir()
 end
 
 -- Delete a project
-local function delete_project(prompt_bufnr)
-  local selection = action_state.get_selected_entry()
-  if not selection then
-    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
-    return
-  end
-  actions.close(prompt_bufnr)
+function M.delete_project(selected)
+  local dir = selected:match("%((.-)%)")
+  local name = selected:match("^(.-)%(")
   local projects = read_projects()
   for i, project in ipairs(projects) do
-    if project.name == selection.name and project.dir == selection.dir then
+    if project.name == name and project.dir == dir then
       table.remove(projects, i)
       vim.notify("project_mgr: removed " .. project.name .. " successfully", vim.log.levels.INFO)
       break
@@ -94,28 +97,24 @@ local function delete_project(prompt_bufnr)
 end
 
 -- Edit a project
-local function edit_project(prompt_bufnr)
-  local selection = action_state.get_selected_entry()
-  if not selection then
-    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
-    return
-  end
-  actions.close(prompt_bufnr)
-  local new_name = vim.fn.input("New Project Name: ", selection.name)
+function M.edit_project(selected)
+  local dir = selected:match("%((.-)%)")
+  local name = selected:match("^(.-)%(")
+  local new_name = vim.fn.input("New Project Name: ", name)
   if new_name == "" then
-    new_name = selection.name
+    new_name = name
     vim.notify("project_mgr: Project name use pre", vim.log.levels.INFO)
     return
   end
-  local new_dir = vim.fn.input("New Project Directory: ", selection.dir)
+  local new_dir = vim.fn.input("New Project Directory: ", dir)
   if new_dir == "" then
-    new_dir = selection.dir
+    new_dir = dir
     vim.notify("project_mgr: Project directory use pre", vim.log.levels.INFO)
     return
   end
   local projects = read_projects()
   for i, project in ipairs(projects) do
-    if project.name == selection.name and project.dir == selection.dir then
+    if project.name == name and project.dir == dir then
       projects[i] = { name = new_name, dir = new_dir }
       break
     end
@@ -125,44 +124,23 @@ local function edit_project(prompt_bufnr)
 end
 
 -- Change directory to the selected project's directory
-local function change_directory(prompt_bufnr)
-  local selection = action_state.get_selected_entry()
-  if not selection then
-    vim.notify("project_mgr: No project selected", vim.log.levels.ERROR)
-    return
-  end
-  actions.close(prompt_bufnr)
-  vim.cmd("cd " .. selection.dir)
-  vim.notify("Changed directory to " .. selection.dir, vim.log.levels.INFO)
+function M.change_directory(selected)
+  local dir = selected:match("%((.-)%)")
+  vim.cmd("cd " .. dir)
+  vim.notify("Changed directory to " .. dir, vim.log.levels.INFO)
 end
 
 -- List projects using Telescope
 function M.list_projects()
   local projects = read_projects()
-  pickers
-    .new({}, {
-      prompt_title = "Projects",
-      finder = finders.new_table({
-        results = projects,
-        entry_maker = function(entry)
-          return {
-            value = entry,
-            display = entry.name .. " (" .. entry.dir .. ")",
-            ordinal = entry.name,
-            name = entry.name,
-            dir = entry.dir,
-          }
-        end,
-      }),
-      sorter = conf.generic_sorter({}),
-      attach_mappings = function(_, map)
-        map("n", "d", delete_project)
-        map("n", "c", edit_project)
-        map({ "n", "i" }, "<CR>", change_directory) -- Add this line to change directory on Enter
-        return true
-      end,
-    })
-    :find()
+  local project_list = {}
+  if projects == nil then
+    return {}
+  end
+  for _, project in ipairs(projects) do
+    table.insert(project_list, project.name .. "(" .. project.dir .. ")")
+  end
+  return project_list
 end
 
 -- 获取现在的目录配置名字
