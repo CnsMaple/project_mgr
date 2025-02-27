@@ -2,12 +2,6 @@
 local M = {}
 local Path = require("plenary.path")
 
--- local actions = require("telescope.actions")
--- local action_state = require("telescope.actions.state")
--- local pickers = require("telescope.pickers")
--- local finders = require("telescope.finders")
--- local conf = require("telescope.config").values
-
 local project_dir = vim.fn.stdpath("data") .. "/project_mgr"
 local project_file = project_dir .. "/project.json"
 -- local now_project = nil
@@ -94,6 +88,40 @@ function M.delete_project(selected)
     end
   end
   write_projects(projects)
+end
+
+function M.delete_project_current_dir()
+  local dir = vim.fn.getcwd() -- Get the current working directory
+  local projects = read_projects()
+  for i, project in ipairs(projects) do
+    if project.dir == dir then
+      table.remove(projects, i)
+      vim.notify("project_mgr: removed " .. project.dir .. " successfully", vim.log.levels.INFO)
+      break
+    end
+  end
+  write_projects(projects)
+end
+
+-- Edit a project
+function M.edit_project_current_dir()
+  local dir = vim.fn.getcwd() -- Get the current working directory
+  local name = "new"
+  local new_name = vim.fn.input("New Project Name: ", name)
+  if new_name == "" then
+    new_name = name
+    vim.notify("project_mgr: Project name use pre", vim.log.levels.INFO)
+    return
+  end
+  local projects = read_projects()
+  for i, project in ipairs(projects) do
+    if project.dir == dir then
+      projects[i] = { name = new_name, dir = dir }
+      break
+    end
+  end
+  write_projects(projects)
+  vim.notify("project_mgr: updated to new name " .. new_name, vim.log.levels.INFO)
 end
 
 -- Edit a project
