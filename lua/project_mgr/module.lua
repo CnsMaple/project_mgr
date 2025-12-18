@@ -199,7 +199,9 @@ function M.add_xbot_robot_project()
     local name = json.name
 
     write_projects(dir, name, "edit")
+    return true
   end
+  return false
 end
 
 return M

@@ -38,11 +38,12 @@ M.config = config
 -- you can also put some validation here for those.
 M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
+  local continue_flag = false
   -- 如果当前目录存在 xbot_robot 目录，那就读取这个目录下的package.json文件，然后jason里面的name字段作为项目名称，当前目录作为项目路径，添加到项目列表中
   if M.config.enabled_xbot_robot then
-    module.add_xbot_robot_project()
+    continue_flag = module.add_xbot_robot_project()
   end
-  if M.config.auto_add_project then
+  if continue_flag ~= true and M.config.auto_add_project then
     module.add_project_current_dir(true)
   end
 end
