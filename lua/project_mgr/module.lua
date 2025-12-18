@@ -33,12 +33,41 @@ local function read_projects()
 end
 
 -- Write projects to the project file
-local function write_projects(projects)
-  ensure_project_file()
+local function write_projects(dir, name, cul)
+  local projects = read_projects()
+
+  local find_flag = false
+  for i, project in ipairs(projects) do
+    if project.dir == dir then
+      if cul == "edit" then
+        if project.name == name then
+          return
+        end
+        projects[i] = { name = name, dir = dir }
+        vim.notify("project_mgr: updated successfully", vim.log.levels.INFO)
+      elseif cul == "delete" then
+        table.remove(projects, i)
+        vim.notify("project_mgr: removed successfully", vim.log.levels.INFO)
+      else
+        error("Unknown operation: " .. cul)
+        return
+      end
+      find_flag = true
+      break
+    end
+  end
+
+  if not find_flag and cul == "edit" then
+    table.insert(projects, { name = name, dir = dir })
+    vim.notify("project_mgr: updated successfully", vim.log.levels.INFO)
+  end
+
   local file = io.open(project_file, "w")
   if file == nil then
     error("Failed to write projects to file")
+    return
   end
+
   file:write(vim.fn.json_encode(projects))
   file:close()
 end
@@ -55,10 +84,7 @@ function M.add_project()
     vim.notify("project_mgr: Project directory cannot be empty", vim.log.levels.ERROR)
     return
   end
-  local projects = read_projects()
-  table.insert(projects, { name = name, dir = dir })
-  write_projects(projects)
-  vim.notify("project_mgr: added " .. name .. " successfully", vim.log.levels.INFO)
+  write_projects(dir, name, "edit")
 end
 
 -- Add a new project on current dir
@@ -69,38 +95,19 @@ function M.add_project_current_dir()
     return
   end
   local dir = vim.fn.getcwd() -- Get the current working directory
-  local projects = read_projects()
-  table.insert(projects, { name = name, dir = dir })
-  write_projects(projects)
-  vim.notify("project_mgr: added " .. name .. " successfully", vim.log.levels.INFO)
+  write_projects(dir, name, "edit")
 end
 
 -- Delete a project
 function M.delete_project(selected)
   local dir = selected:match("%((.-)%)")
   local name = selected:match("^(.-)%(")
-  local projects = read_projects()
-  for i, project in ipairs(projects) do
-    if project.name == name and project.dir == dir then
-      table.remove(projects, i)
-      vim.notify("project_mgr: removed " .. project.name .. " successfully", vim.log.levels.INFO)
-      break
-    end
-  end
-  write_projects(projects)
+  write_projects(dir, name, "delete")
 end
 
 function M.delete_project_current_dir()
   local dir = vim.fn.getcwd() -- Get the current working directory
-  local projects = read_projects()
-  for i, project in ipairs(projects) do
-    if project.dir == dir then
-      table.remove(projects, i)
-      vim.notify("project_mgr: removed " .. project.dir .. " successfully", vim.log.levels.INFO)
-      break
-    end
-  end
-  write_projects(projects)
+  write_projects(dir, "", "delete")
 end
 
 -- Edit a project
@@ -113,15 +120,7 @@ function M.edit_project_current_dir()
     vim.notify("project_mgr: Project name use pre", vim.log.levels.INFO)
     return
   end
-  local projects = read_projects()
-  for i, project in ipairs(projects) do
-    if project.dir == dir then
-      projects[i] = { name = new_name, dir = dir }
-      break
-    end
-  end
-  write_projects(projects)
-  vim.notify("project_mgr: updated to new name " .. new_name, vim.log.levels.INFO)
+  write_projects(dir, new_name, "edit")
 end
 
 -- Edit a project
@@ -140,15 +139,7 @@ function M.edit_project(selected)
     vim.notify("project_mgr: Project directory use pre", vim.log.levels.INFO)
     return
   end
-  local projects = read_projects()
-  for i, project in ipairs(projects) do
-    if project.name == name and project.dir == dir then
-      projects[i] = { name = new_name, dir = new_dir }
-      break
-    end
-  end
-  write_projects(projects)
-  vim.notify("project_mgr: updated to new name " .. new_name .. " and new dir " .. new_dir, vim.log.levels.INFO)
+  write_projects(new_dir, new_name, "edit")
 end
 
 -- Change directory to the selected project's directory
@@ -159,7 +150,7 @@ function M.change_directory(selected)
 end
 
 -- List projects using Telescope
-function M.list_projects()
+function M.show_list_projects()
   local projects = read_projects()
   local project_list = {}
   if projects == nil then
@@ -191,6 +182,18 @@ function M.get_now_project_dir(name)
     end
   end
   return nil
+end
+
+function M.add_xbot_robot_project()
+  local dir = vim.fn.getcwd() -- Get the current working directory
+  local package_json_path = dir .. "/xbot_robot/package.json"
+  if vim.fn.filereadable(package_json_path) == 1 then
+    local content = vim.fn.readfile(package_json_path)
+    local json = vim.fn.json_decode(content)
+    local name = json.name
+
+    write_projects(dir, name, "edit")
+  end
 end
 
 return M
