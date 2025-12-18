@@ -88,13 +88,19 @@ function M.add_project()
 end
 
 -- Add a new project on current dir
-function M.add_project_current_dir()
-  local name = vim.fn.input("Project Name: ")
+function M.add_project_current_dir(auto_add_project)
+  local dir = vim.fn.getcwd() -- Get the current working directory
+  local name = ""
+  if auto_add_project == true then
+    -- 获取现在最后一级的目录名字作为项目名字
+    name = vim.fn.fnamemodify(dir, ":t")
+  else
+    name = vim.fn.input("Project Name: ")
+  end
   if name == "" then
     vim.notify("project_mgr: Project name cannot be empty", vim.log.levels.ERROR)
     return
   end
-  local dir = vim.fn.getcwd() -- Get the current working directory
   write_projects(dir, name, "edit")
 end
 

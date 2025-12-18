@@ -21,8 +21,10 @@ end
 
 ---@class Config
 ---@field enabled_xbot_robot boolean
+---@field auto_add_project boolean
 local config = {
   enabled_xbot_robot = false,
+  auto_add_project = false,
 }
 
 ---@class MyModule
@@ -39,6 +41,9 @@ M.setup = function(args)
   -- 如果当前目录存在 xbot_robot 目录，那就读取这个目录下的package.json文件，然后jason里面的name字段作为项目名称，当前目录作为项目路径，添加到项目列表中
   if M.config.enabled_xbot_robot then
     module.add_xbot_robot_project()
+  end
+  if M.config.auto_add_project then
+    module.add_project_current_dir(true)
   end
 end
 
